@@ -1,7 +1,10 @@
 import { and, eq, gt, inArray, isNull, lte, or } from "drizzle-orm";
 import {
   db,
+  maintenanceMessagesTable,
   maintenanceTable,
+  type MaintenanceMessageKind,
+  type MaintenanceMessageReference,
   type MaintenanceReason,
   type MaintenanceService,
 } from "@workspace/db";
@@ -14,6 +17,43 @@ export type MaintenanceRecord = {
   updatedByUserId: string;
   updatedAt: Date;
 };
+
+export async function getMaintenanceMessage(
+  guildId: string,
+  kind: MaintenanceMessageKind,
+): Promise<MaintenanceMessageReference | null> {
+  const [reference] = await db
+    .select()
+    .from(maintenanceMessagesTable)
+    .where(
+      and(
+        eq(maintenanceMessagesTable.guildId, guildId),
+        eq(maintenanceMessagesTable.kind, kind),
+      ),
+    )
+    .limit(1);
+
+  return reference ?? null;
+}
+
+export async function saveMaintenanceMessage(
+  values: Pick<
+    MaintenanceMessageReference,
+    "guildId" | "kind" | "channelId" | "messageId"
+  >,
+): Promise<void> {
+  await db
+    .insert(maintenanceMessagesTable)
+    .values(values)
+    .onConflictDoUpdate({
+      target: [maintenanceMessagesTable.guildId, maintenanceMessagesTable.kind],
+      set: {
+        channelId: values.channelId,
+        messageId: values.messageId,
+        updatedAt: new Date(),
+      },
+    });
+}
 
 export async function getActiveMaintenance(
   service: MaintenanceService,

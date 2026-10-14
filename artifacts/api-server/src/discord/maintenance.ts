@@ -4,9 +4,15 @@ import {
   EmbedBuilder,
   MessageFlags,
   type ChatInputCommandInteraction,
+  type Guild,
+  type Message,
   type TextChannel,
 } from "discord.js";
 import type { MaintenanceService } from "@workspace/db";
+import {
+  STAFF_ABSENCE_CHANNEL_ID,
+  SUPPORT_MAINTENANCE_CHANNEL_ID,
+} from "./constants";
 import { logger } from "../lib/logger";
 import { errorEmbed } from "./embeds";
 import { syncRegistrationMessage } from "./message";
@@ -14,7 +20,9 @@ import {
   clearExpiredMaintenance,
   clearMaintenance,
   getActiveMaintenances,
+  getMaintenanceMessage,
   maintenanceReasonLabel,
+  saveMaintenanceMessage,
   setMaintenance,
   type MaintenanceRecord,
 } from "./maintenance-store";
@@ -196,6 +204,190 @@ function statusEmbed(records: MaintenanceRecord[]): EmbedBuilder {
     .setTimestamp();
 }
 
+function maintenanceNoticeTitle(
+  service: "support" | "staff-absence",
+): string {
+  return service === "support"
+    ? "Maintenance du support"
+    : "Maintenance des absences staff";
+}
+
+function maintenanceNoticeChannelId(
+  service: "support" | "staff-absence",
+): string {
+  return service === "support"
+    ? SUPPORT_MAINTENANCE_CHANNEL_ID
+    : STAFF_ABSENCE_CHANNEL_ID;
+}
+
+function maintenanceNoticeEmbed(
+  service: "support" | "staff-absence",
+  record: MaintenanceRecord,
+): EmbedBuilder {
+  return new EmbedBuilder()
+    .setColor(0xe45b5b)
+    .setTitle(`${maintenanceNoticeTitle(service)} en cours`)
+    .setDescription(
+      service === "support"
+        ? "⏸️ Le support est temporairement indisponible."
+        : "⏸️ Les annonces d’absence staff sont temporairement suspendues.",
+    )
+    .addFields(
+      {
+        name: "Raison",
+        value: maintenanceReasonLabel(record.reason),
+        inline: true,
+      },
+      {
+        name: "Durée",
+        value: record.endsAt
+          ? `Jusqu’au ${discordTime(record.endsAt)}`
+          : "Jusqu’à la réactivation manuelle.",
+        inline: true,
+      },
+      {
+        name: "Précision",
+        value: truncate(record.message || "Aucune précision complémentaire.", 900),
+        inline: false,
+      },
+    )
+    .setTimestamp();
+}
+
+async function fetchGuildTextChannel(
+  guild: Guild,
+  channelId: string,
+): Promise<TextChannel | null> {
+  const channel = await guild.channels.fetch(channelId).catch(() => null);
+  return channel?.type === ChannelType.GuildText ? channel : null;
+}
+
+async function fetchTrackedMessage(
+  guild: Guild,
+  kind: "status" | "support" | "staff-absence",
+): Promise<{ channel: TextChannel; message: Message } | null> {
+  const reference = await getMaintenanceMessage(guild.id, kind);
+  if (!reference) {
+    return null;
+  }
+  const channel = await fetchGuildTextChannel(guild, reference.channelId);
+  if (!channel) {
+    return null;
+  }
+  const message = await channel.messages.fetch(reference.messageId).catch(() => null);
+  return message ? { channel, message } : null;
+}
+
+async function upsertTrackedMessage(
+  guild: Guild,
+  kind: "status" | "support" | "staff-absence",
+  embed: EmbedBuilder,
+  fallbackChannelId?: string,
+): Promise<Message | null> {
+  const reference = await getMaintenanceMessage(guild.id, kind);
+  const preferredChannelId = reference?.channelId ?? fallbackChannelId;
+  if (!preferredChannelId) {
+    return null;
+  }
+
+  let channel = await fetchGuildTextChannel(guild, preferredChannelId);
+  if (!channel && fallbackChannelId && fallbackChannelId !== preferredChannelId) {
+    channel = await fetchGuildTextChannel(guild, fallbackChannelId);
+  }
+  if (!channel) {
+    return null;
+  }
+
+  if (reference && channel.id === reference.channelId) {
+    const existingMessage = await channel.messages
+      .fetch(reference.messageId)
+      .catch(() => null);
+    if (existingMessage) {
+      return existingMessage.edit({
+        embeds: [embed],
+        allowedMentions: { parse: [] },
+      });
+    }
+  }
+
+  const message = await channel.send({
+    embeds: [embed],
+    allowedMentions: { parse: [] },
+  });
+  await saveMaintenanceMessage({
+    guildId: guild.id,
+    kind,
+    channelId: channel.id,
+    messageId: message.id,
+  });
+  return message;
+}
+
+async function finishMaintenanceNotice(
+  guild: Guild,
+  service: "support" | "staff-absence",
+): Promise<void> {
+  const tracked = await fetchTrackedMessage(guild, service);
+  const existingEmbed = tracked?.message.embeds[0];
+  if (!tracked || !existingEmbed) {
+    return;
+  }
+
+  const finishedEmbed = EmbedBuilder.from(existingEmbed)
+    .setColor(0x55b77a)
+    .setTitle(`${maintenanceNoticeTitle(service)} terminée`)
+    .setDescription(
+      service === "support"
+        ? "✅ Le support est de nouveau disponible."
+        : "✅ Les annonces d’absence staff sont de nouveau disponibles.",
+    )
+    .setTimestamp();
+  await tracked.message.edit({
+    embeds: [finishedEmbed],
+    allowedMentions: { parse: [] },
+  });
+}
+
+export async function refreshMaintenanceMessages(client: Client): Promise<void> {
+  const records = await getActiveMaintenances();
+  const activeByService = new Map(records.map((record) => [record.service, record]));
+
+  for (const guild of client.guilds.cache.values()) {
+    const statusReference = await getMaintenanceMessage(guild.id, "status");
+    if (statusReference) {
+      try {
+        await upsertTrackedMessage(guild, "status", statusEmbed(records));
+      } catch (error) {
+        logger.warn(
+          { err: error, guildId: guild.id },
+          "Could not refresh the maintenance status embed",
+        );
+      }
+    }
+
+    for (const service of ["support", "staff-absence"] as const) {
+      try {
+        const record = activeByService.get(service);
+        if (record) {
+          await upsertTrackedMessage(
+            guild,
+            service,
+            maintenanceNoticeEmbed(service, record),
+            maintenanceNoticeChannelId(service),
+          );
+        } else {
+          await finishMaintenanceNotice(guild, service);
+        }
+      } catch (error) {
+        logger.warn(
+          { err: error, guildId: guild.id, service },
+          "Could not refresh a maintenance notice",
+        );
+      }
+    }
+  }
+}
+
 async function refreshRecruitmentMessages(client: Client): Promise<void> {
   for (const guild of client.guilds.cache.values()) {
     try {
@@ -278,6 +470,7 @@ export async function handleMaintenanceCommand(
     if (toClear.includes("recrutement")) {
       await refreshRecruitmentMessages(interaction.client);
     }
+    await refreshMaintenanceMessages(interaction.client);
     await interaction.editReply({
       embeds: [
         new EmbedBuilder()
@@ -350,6 +543,7 @@ export async function handleMaintenanceCommand(
   if (services.includes("recrutement")) {
     await refreshRecruitmentMessages(interaction.client);
   }
+  await refreshMaintenanceMessages(interaction.client);
 
   const serviceLabel =
     service === "tout"
@@ -382,12 +576,48 @@ export async function handleMaintenanceCommand(
 export async function handleStatusCommand(
   interaction: ChatInputCommandInteraction,
 ): Promise<void> {
-  await interaction.deferReply();
-  const records = await getActiveMaintenances();
-  await interaction.editReply({
-    embeds: [statusEmbed(records)],
-    allowedMentions: { parse: [] },
-  });
+  const guild = interaction.guild;
+  const channel = interaction.channel;
+  if (!guild || channel?.type !== ChannelType.GuildText) {
+    await interaction.reply({
+      embeds: [
+        errorEmbed(
+          "Salon indisponible",
+          "Utilise cette commande dans un salon textuel du serveur.",
+        ),
+      ],
+      flags: MessageFlags.Ephemeral,
+    });
+    return;
+  }
+
+  await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+  try {
+    const records = await getActiveMaintenances();
+    const statusMessage = await upsertTrackedMessage(
+      guild,
+      "status",
+      statusEmbed(records),
+      channel.id,
+    );
+    if (!statusMessage) {
+      throw new Error("No writable text channel was available for the status embed.");
+    }
+    await interaction.deleteReply();
+  } catch (error) {
+    logger.warn(
+      { err: error, guildId: guild.id, channelId: channel.id },
+      "Could not publish the maintenance status embed",
+    );
+    await interaction.editReply({
+      embeds: [
+        errorEmbed(
+          "Publication impossible",
+          "Je n’ai pas pu publier ou mettre à jour l’embed de statut dans ce salon.",
+        ),
+      ],
+    });
+  }
 }
 
 export function startMaintenanceExpiryWatcher(client: Client): void {
@@ -408,6 +638,7 @@ export function startMaintenanceExpiryWatcher(client: Client): void {
       }
       if (expired.length > 0) {
         logger.info({ services: expired }, "Maintenance period expired");
+        await refreshMaintenanceMessages(client);
       }
     } catch (error) {
       logger.error({ err: error }, "Could not clear expired maintenance");
@@ -416,6 +647,9 @@ export function startMaintenanceExpiryWatcher(client: Client): void {
     }
   };
 
+  void refreshMaintenanceMessages(client).catch((error: unknown) => {
+    logger.warn({ err: error }, "Could not synchronize maintenance embeds on startup");
+  });
   void sweep();
   setInterval(() => void sweep(), 5_000);
 }

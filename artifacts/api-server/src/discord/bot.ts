@@ -36,6 +36,7 @@ import {
   AUTHORIZED_SETUP_USER_IDS,
   OKAY_EMOJI_NAME,
   RANK_COMMAND_ACCESS_ROLE_ID,
+  RANK_ASSOCIATED_ROLE_ID,
   RANK_ANNOUNCEMENT_CHANNEL_ID,
   RANK_ANNOUNCEMENT_ROLE_ID,
   STAFF_ABSENCE_ACCESS_ROLE_ID,
@@ -1405,6 +1406,26 @@ async function handleRoleActionCommand(
     });
     return;
   }
+  const associatedRole =
+    targetRole.id === RANK_ASSOCIATED_ROLE_ID
+      ? targetRole
+      : await guild.roles.fetch(RANK_ASSOCIATED_ROLE_ID).catch(() => null);
+  if (!associatedRole) {
+    await interaction.editReply({
+      embeds: [
+        errorEmbed(
+          "Rôle complémentaire introuvable",
+          `Le rôle à modifier en complément (<@&${RANK_ASSOCIATED_ROLE_ID}>) est introuvable sur ce serveur.`,
+        ),
+      ],
+      allowedMentions: { parse: [] },
+    });
+    return;
+  }
+  const rolesToModify =
+    targetRole.id === associatedRole.id
+      ? [targetRole]
+      : [targetRole, associatedRole];
 
   const reason = interaction.options.getString("raison", true).trim();
   if (!reason) {
@@ -1424,6 +1445,22 @@ async function handleRoleActionCommand(
         errorEmbed(
           "Rôle non autorisé",
           "Le rôle @everyone, les rôles gérés par une intégration et les rôles administrateur ne peuvent pas être modifiés avec cette commande.",
+        ),
+      ],
+    });
+    return;
+  }
+  if (
+    associatedRole.id !== targetRole.id &&
+    (associatedRole.id === guild.id ||
+      associatedRole.managed ||
+      associatedRole.permissions.has(PermissionFlagsBits.Administrator))
+  ) {
+    await interaction.editReply({
+      embeds: [
+        errorEmbed(
+          "Rôle complémentaire non autorisé",
+          "Le rôle complémentaire ne peut pas être modifié par cette commande.",
         ),
       ],
     });
@@ -1464,16 +1501,23 @@ async function handleRoleActionCommand(
 
   const botMember =
     guild.members.me ?? (await guild.members.fetchMe().catch(() => null));
+  const roleAboveBot = botMember
+    ? rolesToModify.find(
+        (role) => role.comparePositionTo(botMember.roles.highest) >= 0,
+      )
+    : undefined;
   if (
     !botMember ||
     !botMember.permissions.has(PermissionFlagsBits.ManageRoles) ||
-    targetRole.comparePositionTo(botMember.roles.highest) >= 0
+    roleAboveBot
   ) {
     await interaction.editReply({
       embeds: [
         errorEmbed(
           "Permissions insuffisantes",
-          "Biscotto doit avoir la permission Gérer les rôles et un rôle supérieur au rôle sélectionné.",
+          roleAboveBot
+            ? `Biscotto doit avoir un rôle supérieur au rôle ${roleAboveBot.name}.`
+            : "Biscotto doit avoir la permission Gérer les rôles.",
         ),
       ],
     });
@@ -1573,9 +1617,9 @@ async function handleRoleActionCommand(
   try {
     const auditReason = `${interaction.user.username} (${interaction.user.id}) — ${reason}`;
     if (action === "rank") {
-      await targetMember.roles.add(targetRole, auditReason);
+      await targetMember.roles.add(rolesToModify, auditReason);
     } else {
-      await targetMember.roles.remove(targetRole, auditReason);
+      await targetMember.roles.remove(rolesToModify, auditReason);
     }
   } catch (error) {
     logger.warn(
@@ -1609,6 +1653,7 @@ async function handleRoleActionCommand(
           targetRole,
           interaction.user,
           reason,
+          associatedRole,
         ),
       ],
       allowedMentions: {
@@ -1631,7 +1676,7 @@ async function handleRoleActionCommand(
       embeds: [
         successEmbed(
           action === "rank" ? "Rank effectué" : "Derank effectué",
-          `Le rôle ${targetRole.name} a été ${action === "rank" ? "attribué" : "retiré"} à ${targetUser.username}, et l’annonce a été publiée dans <#${RANK_ANNOUNCEMENT_CHANNEL_ID}>.`,
+          `${rolesToModify.length > 1 ? "Les rôles" : "Le rôle"} ${rolesToModify.map((role) => role.name).join(" et ")} ${rolesToModify.length > 1 ? "ont" : "a"} été ${action === "rank" ? "attribué" : "retiré"}${rolesToModify.length > 1 ? "s" : ""} à ${targetUser.username}, et l’annonce a été publiée dans <#${RANK_ANNOUNCEMENT_CHANNEL_ID}>.`,
         ),
       ],
       allowedMentions: { parse: [] },

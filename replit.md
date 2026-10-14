@@ -27,6 +27,7 @@ Bot Discord configurable pour gérer le recrutement, les conversations de modmai
 - `artifacts/api-server/src/discord/modmail.ts` — member support conversations and moderator actions
 - `artifacts/api-server/src/discord/store.ts` — persisted registration configuration
 - `lib/db/src/schema/` — registration and modmail tables
+- `lib/db/src/schema/maintenance-message.ts` — saved message IDs for persistent status and maintenance embeds
 
 ## Architecture decisions
 
@@ -35,6 +36,9 @@ Bot Discord configurable pour gérer le recrutement, les conversations de modmai
 - Setup access is checked in bot interactions; members can still use the public registration flow.
 
 ## Product
+
+- `/status` creates or updates one persistent embed in the command channel and hides its temporary command response. It refreshes automatically when maintenance starts, ends, or expires.
+- Support maintenance publishes or edits an embed in channel `1429467909545005128`; staff-absence maintenance does the same in channel `1559248976694353960`. Active notices show the reason and expected end time or manual duration, and are edited when maintenance ends.
 
 - Les administrateurs configurent le recrutement depuis un panneau privé avec aperçu; les candidats voient un embed de recrutement mis en forme avec l’identité du serveur, les étapes, les thèmes du formulaire et son état.
 - Le formulaire propose quatre questions staff par défaut, reste personnalisable et accepte jusqu’à cinq questions; les anciennes configurations sont conservées et les anciens textes par défaut sont actualisés.
@@ -61,7 +65,7 @@ The command is limited to the primary administrators and users authorized for th
 
 ### Rank and derank
 
-`/rank-derank` takes an `action` choice (`rank` or `derank`), a member, a `role` to add/remove, and a reason. It posts the rank/derank embed in channel `1542655357728456855`; the message above the embed mentions the affected member and the notification role `1429508546550038648`, while the embed includes the selected role in the action copy. The footer identifies the command author and shows their avatar. Rank and derank use Markdown H2 headings, the specified French copy, and quoted member/reason lines with `<:utilisateur:1558391260375556097>` and `<:raison:1558391410498084925>`; use `<:rank:1558389911625662544>` for rank and `<:derank:1558389778406440991>` for derank. Add `:okay:` as a reaction to the announcement message, not in the embed title. Access is limited to members with role `1429494599730335765`, server administrators, and the server owner. Biscotto needs **Manage Roles**, permission to send embeds and mention the notification role in the announcement channel, and a role hierarchy above the target role and member.
+`/rank-derank` takes an `action` choice (`rank` or `derank`), a member, a `role` to add/remove, and a reason. It also adds/removes role `1559644170199760957` and includes that change in the announcement embed. It posts the rank/derank embed in channel `1542655357728456855`; the message above the embed mentions the affected member and the notification role `1429508546550038648`, while the embed includes the selected role in the action copy. The footer identifies the command author and shows their avatar. Rank and derank use Markdown H2 headings, the specified French copy, and quoted member/reason lines with `<:utilisateur:1558391260375556097>` and `<:raison:1558391410498084925>`; use `<:rank:1558389911625662544>` for rank and `<:derank:1558389778406440991>` for derank. Add `:okay:` as a reaction to the announcement message, not in the embed title. Access is limited to members with role `1429494599730335765`, server administrators, and the server owner. Biscotto needs **Manage Roles**, permission to send embeds and mention the notification role in the announcement channel, and a role hierarchy above every role being modified and the member.
 
 ### Recrutement et absences
 
