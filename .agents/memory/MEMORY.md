@@ -1,0 +1,1 @@
+- [Rank/derank policy](rank-derank-policy.md) — one action-choice command changes the selected role and posts a branded embed in the fixed channel.

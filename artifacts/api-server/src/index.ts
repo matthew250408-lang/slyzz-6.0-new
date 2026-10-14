@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { startDiscordBot } from "./discord/bot";
 
 const rawPort = process.env["PORT"];
 
@@ -23,3 +24,15 @@ app.listen(port, (err) => {
 
   logger.info({ port }, "Server listening");
 });
+
+const discordToken =
+  process.env["DISCORD_BOT_TOKEN"] ?? process.env["DISCORD_TOKEN"];
+if (!discordToken) {
+  logger.warn(
+    "DISCORD_BOT_TOKEN is not configured; the HTTP server is running but the Discord bot is disabled.",
+  );
+} else {
+  startDiscordBot(discordToken).catch((error: unknown) => {
+    logger.error({ err: error }, "Discord bot failed to start");
+  });
+}
