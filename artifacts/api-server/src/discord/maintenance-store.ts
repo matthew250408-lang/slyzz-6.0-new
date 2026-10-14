@@ -128,11 +128,18 @@ export async function clearMaintenance(
 
 export async function clearExpiredMaintenance(
   now = new Date(),
-): Promise<MaintenanceService[]> {
+): Promise<Array<{ service: MaintenanceService; endsAt: Date }>> {
   const expired = await db
     .delete(maintenanceTable)
     .where(lte(maintenanceTable.endsAt, now))
-    .returning({ service: maintenanceTable.service });
+    .returning({
+      service: maintenanceTable.service,
+      endsAt: maintenanceTable.endsAt,
+    });
 
-  return expired.map((record) => record.service);
+  return expired.flatMap((record) =>
+    record.endsAt
+      ? [{ service: record.service, endsAt: record.endsAt }]
+      : [],
+  );
 }

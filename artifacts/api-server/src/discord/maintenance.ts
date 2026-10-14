@@ -19,6 +19,7 @@ import { syncRegistrationMessage } from "./message";
 import {
   clearExpiredMaintenance,
   clearMaintenance,
+  getActiveMaintenance,
   getActiveMaintenances,
   getMaintenanceMessage,
   maintenanceReasonLabel,
@@ -29,8 +30,92 @@ import {
 import { getInscriptionConfig } from "./store";
 
 const BRUSSELS_TIME_ZONE = "Europe/Brussels";
+const MAINTENANCE_NOTICE_DELETE_DELAY_MS = 60_000;
 let expirySweepRunning = false;
 let expiryWatcherStarted = false;
+const maintenanceNoticeDeletionTimers = new Map<
+  string,
+  ReturnType<typeof setTimeout>
+>();
+
+function maintenanceNoticeTimerKey(
+  guildId: string,
+  service: "support" | "staff-absence",
+): string {
+  return `${guildId}:${service}`;
+}
+
+function cancelMaintenanceNoticeDeletion(
+  guildId: string,
+  service: "support" | "staff-absence",
+): void {
+  const key = maintenanceNoticeTimerKey(guildId, service);
+  const timer = maintenanceNoticeDeletionTimers.get(key);
+  if (timer) {
+    clearTimeout(timer);
+    maintenanceNoticeDeletionTimers.delete(key);
+  }
+}
+
+function scheduleMaintenanceNoticeDeletion(
+  guild: Guild,
+  service: "support" | "staff-absence",
+  message: Message,
+  finishedAt: Date,
+): void {
+  cancelMaintenanceNoticeDeletion(guild.id, service);
+
+  const key = maintenanceNoticeTimerKey(guild.id, service);
+  const deletionAt =
+    finishedAt.getTime() + MAINTENANCE_NOTICE_DELETE_DELAY_MS;
+  const timeout = setTimeout(() => {
+    void (async () => {
+      if (maintenanceNoticeDeletionTimers.get(key) !== timeout) {
+        return;
+      }
+
+      try {
+        const [activeMaintenance, tracked] = await Promise.all([
+          getActiveMaintenance(service),
+          fetchTrackedMessage(guild, service),
+        ]);
+        const currentEmbed = tracked?.message.embeds[0];
+        const currentTimestamp = currentEmbed?.timestamp
+          ? Date.parse(currentEmbed.timestamp)
+          : Number.NaN;
+
+        if (
+          activeMaintenance ||
+          !tracked ||
+          tracked.message.id !== message.id ||
+          currentEmbed?.title !== `${maintenanceNoticeTitle(service)} terminée` ||
+          !Number.isFinite(currentTimestamp) ||
+          Math.floor(currentTimestamp / 1000) !==
+            Math.floor(finishedAt.getTime() / 1000)
+        ) {
+          return;
+        }
+
+        await tracked.message.delete();
+        logger.info(
+          { guildId: guild.id, service, messageId: tracked.message.id },
+          "Deleted completed maintenance notice",
+        );
+      } catch (error) {
+        logger.warn(
+          { err: error, guildId: guild.id, service },
+          "Could not delete completed maintenance notice",
+        );
+      } finally {
+        if (maintenanceNoticeDeletionTimers.get(key) === timeout) {
+          maintenanceNoticeDeletionTimers.delete(key);
+        }
+      }
+    })();
+  }, Math.max(0, deletionAt - Date.now()));
+
+  maintenanceNoticeDeletionTimers.set(key, timeout);
+}
 
 function localDateTimeParts(date: Date): Record<string, number> {
   const parts = new Intl.DateTimeFormat("en-GB", {
@@ -326,6 +411,7 @@ async function upsertTrackedMessage(
 async function finishMaintenanceNotice(
   guild: Guild,
   service: "support" | "staff-absence",
+  endedAt?: Date,
 ): Promise<void> {
   const tracked = await fetchTrackedMessage(guild, service);
   const existingEmbed = tracked?.message.embeds[0];
@@ -333,22 +419,48 @@ async function finishMaintenanceNotice(
     return;
   }
 
-  const finishedEmbed = EmbedBuilder.from(existingEmbed)
-    .setColor(0x55b77a)
-    .setTitle(`${maintenanceNoticeTitle(service)} terminée`)
-    .setDescription(
-      service === "support"
-        ? "✅ Le support est de nouveau disponible."
-        : "✅ Les annonces d’absence staff sont de nouveau disponibles.",
-    )
-    .setTimestamp();
-  await tracked.message.edit({
-    embeds: [finishedEmbed],
-    allowedMentions: { parse: [] },
-  });
+  const finishedTitle = `${maintenanceNoticeTitle(service)} terminée`;
+  const wasAlreadyFinished = existingEmbed.title === finishedTitle;
+  const existingFinishedAt = existingEmbed.timestamp
+    ? new Date(existingEmbed.timestamp)
+    : null;
+  const hasValidFinishedAt =
+    existingFinishedAt !== null &&
+    Number.isFinite(existingFinishedAt.getTime());
+  const finishedAt =
+    endedAt ??
+    (wasAlreadyFinished && hasValidFinishedAt
+      ? existingFinishedAt
+      : new Date());
+  const timestampMatches =
+    wasAlreadyFinished &&
+    hasValidFinishedAt &&
+    Math.floor(existingFinishedAt.getTime() / 1000) ===
+      Math.floor(finishedAt.getTime() / 1000);
+
+  if (!timestampMatches) {
+    const finishedEmbed = EmbedBuilder.from(existingEmbed)
+      .setColor(0x55b77a)
+      .setTitle(finishedTitle)
+      .setDescription(
+        service === "support"
+          ? "✅ Le support est de nouveau disponible."
+          : "✅ Les annonces d’absence staff sont de nouveau disponibles.",
+      )
+      .setTimestamp(finishedAt);
+    await tracked.message.edit({
+      embeds: [finishedEmbed],
+      allowedMentions: { parse: [] },
+    });
+  }
+
+  scheduleMaintenanceNoticeDeletion(guild, service, tracked.message, finishedAt);
 }
 
-export async function refreshMaintenanceMessages(client: Client): Promise<void> {
+export async function refreshMaintenanceMessages(
+  client: Client,
+  completedAtByService: Map<MaintenanceService, Date> = new Map(),
+): Promise<void> {
   const records = await getActiveMaintenances();
   const activeByService = new Map(records.map((record) => [record.service, record]));
 
@@ -369,6 +481,7 @@ export async function refreshMaintenanceMessages(client: Client): Promise<void> 
       try {
         const record = activeByService.get(service);
         if (record) {
+          cancelMaintenanceNoticeDeletion(guild.id, service);
           await upsertTrackedMessage(
             guild,
             service,
@@ -376,7 +489,11 @@ export async function refreshMaintenanceMessages(client: Client): Promise<void> 
             maintenanceNoticeChannelId(service),
           );
         } else {
-          await finishMaintenanceNotice(guild, service);
+          await finishMaintenanceNotice(
+            guild,
+            service,
+            completedAtByService.get(service),
+          );
         }
       } catch (error) {
         logger.warn(
@@ -626,19 +743,28 @@ export function startMaintenanceExpiryWatcher(client: Client): void {
   }
   expiryWatcherStarted = true;
 
-  const sweep = async () => {
+  const sweep = async (synchronizeOnStart = false) => {
     if (expirySweepRunning) {
       return;
     }
     expirySweepRunning = true;
     try {
       const expired = await clearExpiredMaintenance();
-      if (expired.includes("recrutement")) {
+      const expiredServices = expired.map((record) => record.service);
+      if (expiredServices.includes("recrutement")) {
         await refreshRecruitmentMessages(client);
       }
-      if (expired.length > 0) {
-        logger.info({ services: expired }, "Maintenance period expired");
-        await refreshMaintenanceMessages(client);
+      if (expired.length > 0 || synchronizeOnStart) {
+        if (expired.length > 0) {
+          logger.info(
+            { services: expiredServices },
+            "Maintenance period expired",
+          );
+        }
+        await refreshMaintenanceMessages(
+          client,
+          new Map(expired.map((record) => [record.service, record.endsAt])),
+        );
       }
     } catch (error) {
       logger.error({ err: error }, "Could not clear expired maintenance");
@@ -647,9 +773,6 @@ export function startMaintenanceExpiryWatcher(client: Client): void {
     }
   };
 
-  void refreshMaintenanceMessages(client).catch((error: unknown) => {
-    logger.warn({ err: error }, "Could not synchronize maintenance embeds on startup");
-  });
-  void sweep();
+  void sweep(true);
   setInterval(() => void sweep(), 5_000);
 }
