@@ -117,7 +117,6 @@ export function rankActionEmbed(
   role: Role,
   actor: User,
   reason: string,
-  associatedRole: Role,
 ): EmbedBuilder {
   const isRank = action === "rank";
   const heading = isRank
@@ -140,11 +139,6 @@ export function rankActionEmbed(
       [
         `## ${heading}`,
         ...actionLines,
-        ...(associatedRole.id === role.id
-          ? []
-          : [
-              `Le rôle complémentaire <@&${associatedRole.id}> a également été ${isRank ? "attribué" : "retiré"}.`,
-            ]),
         "",
         `> ${MEMBER_EMOJI} **Membre :** <@${member.id}>`,
         `> ${REASON_EMOJI} **Raison :** ${formattedReason}`,

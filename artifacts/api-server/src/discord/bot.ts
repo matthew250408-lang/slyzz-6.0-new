@@ -1653,7 +1653,6 @@ async function handleRoleActionCommand(
           targetRole,
           interaction.user,
           reason,
-          associatedRole,
         ),
       ],
       allowedMentions: {
