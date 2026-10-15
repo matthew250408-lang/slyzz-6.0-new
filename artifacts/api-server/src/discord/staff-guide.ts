@@ -11,10 +11,10 @@ export const STAFF_GUIDE_NEXT_BUTTON_ID = "staff-guide:private:next";
 export const STAFF_GUIDE_HOME_BUTTON_ID = "staff-guide:private:home";
 export const STAFF_GUIDE_LEGACY_PREVIOUS_BUTTON_ID = "staff-guide:previous";
 export const STAFF_GUIDE_LEGACY_NEXT_BUTTON_ID = "staff-guide:next";
+const STAFF_GUIDE_COLOR = 0xf2b2a8;
 
 export const STAFF_GUIDE_PAGES = [
   {
-    title: "<:raison:1558391410498084925> Guide Staff",
     description: [
       "> Tu **retrouves** ci-dessous toutes les pages à **lire** :",
       "",
@@ -143,12 +143,12 @@ export const STAFF_GUIDE_PAGES = [
       "Merci pour votre investissement et votre engagement au sein du staff Slyzz !",
     ].join("\n"),
   },
-] satisfies Array<{ title: string; description: string }>;
+] satisfies Array<{ title?: string; description: string }>;
 
 export function staffGuideCoverEmbed(): EmbedBuilder {
   return new EmbedBuilder()
-    .setColor(0x5865f2)
-    .setTitle("📘・Guide Staff Slyzz")
+    .setColor(STAFF_GUIDE_COLOR)
+    .setTitle("<:raison:1558391410498084925> Guide Staff")
     .setDescription(
       [
         "Bienvenue dans l'équipe de Slyzz !",
@@ -167,13 +167,16 @@ export function staffGuideEmbed(pageIndex: number): EmbedBuilder {
     throw new RangeError(`Invalid staff guide page index: ${pageIndex}`);
   }
 
-  return new EmbedBuilder()
-    .setColor(0x5865f2)
-    .setTitle(page.title)
+  const embed = new EmbedBuilder()
+    .setColor(STAFF_GUIDE_COLOR)
     .setDescription(page.description)
     .setFooter({
       text: `Slyzz・Guide Staff • Page ${pageIndex + 1}/${STAFF_GUIDE_PAGES.length}`,
     });
+  if (page.title) {
+    embed.setTitle(page.title);
+  }
+  return embed;
 }
 
 export function staffGuideComponents(pageIndex: number) {
