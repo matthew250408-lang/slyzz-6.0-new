@@ -48,6 +48,14 @@ import {
   questionLabel,
 } from "./constants";
 import {
+  isStaffGuideButton,
+  STAFF_GUIDE_NEXT_BUTTON_ID,
+  STAFF_GUIDE_PAGES,
+  staffGuideComponents,
+  staffGuideEmbed,
+  staffGuidePageIndex,
+} from "./staff-guide";
+import {
   applicationEmbed,
   botInfoEmbed,
   errorEmbed,
@@ -112,7 +120,6 @@ const STAFF_ABSENCE_COMMAND_NAME = "absence-staff";
 const MAINTENANCE_COMMAND_NAME = "maintenance";
 const STATUS_COMMAND_NAME = "status";
 const STAFF_GUIDE_COMMAND_NAME = "!guidestaff";
-const STAFF_GUIDE_CONTENT = "";
 const MAINTENANCE_ALLOWED_USER_IDS = new Set([
   "1140296215469240401",
   "1487882100613971979",
@@ -2273,6 +2280,55 @@ export async function startDiscordBot(token: string): Promise<void> {
 
       if (
         interaction.isButton() &&
+        isStaffGuideButton(interaction.customId)
+      ) {
+        if (!STAFF_GUIDE_ALLOWED_USER_IDS.has(interaction.user.id)) {
+          await interaction.reply({
+            embeds: [
+              errorEmbed(
+                "Accès refusé",
+                "Tu n'es pas autorisé à parcourir ce guide.",
+              ),
+            ],
+            ephemeral: true,
+          });
+          return;
+        }
+
+        const currentPage = staffGuidePageIndex(
+          interaction.message.embeds[0]?.footer?.text,
+        );
+        if (currentPage === null) {
+          await interaction.reply({
+            embeds: [
+              errorEmbed(
+                "Guide indisponible",
+                "La page actuelle du guide n'a pas pu être identifiée.",
+              ),
+            ],
+            ephemeral: true,
+          });
+          return;
+        }
+
+        const nextPage =
+          interaction.customId === STAFF_GUIDE_NEXT_BUTTON_ID
+            ? currentPage + 1
+            : currentPage - 1;
+        const boundedPage = Math.max(
+          0,
+          Math.min(nextPage, STAFF_GUIDE_PAGES.length - 1),
+        );
+        await interaction.update({
+          embeds: [staffGuideEmbed(boundedPage)],
+          components: staffGuideComponents(boundedPage),
+          allowedMentions: { parse: [] },
+        });
+        return;
+      }
+
+      if (
+        interaction.isButton() &&
         isModmailButton(interaction.customId)
       ) {
         await handleModmailButton(interaction, client);
@@ -2576,14 +2632,13 @@ export async function startDiscordBot(token: string): Promise<void> {
         }
 
         await message.channel.send({
-          embeds: [
-            successEmbed(
-              "Guide staff",
-              STAFF_GUIDE_CONTENT ||
-                "Le contenu du guide staff n’a pas encore été configuré.",
-            ),
-          ],
-          allowedMentions: { parse: [], repliedUser: false },
+          content: `<@&${RANK_ANNOUNCEMENT_ROLE_ID}>`,
+          embeds: [staffGuideEmbed(0)],
+          components: staffGuideComponents(0),
+          allowedMentions: {
+            parse: [],
+            roles: [RANK_ANNOUNCEMENT_ROLE_ID],
+          },
         });
         await message.delete().catch((error: unknown) => {
           logger.warn(
