@@ -48,12 +48,15 @@ import {
   questionLabel,
 } from "./constants";
 import {
+  isLegacyStaffGuideButton,
   isPrivateStaffGuideButton,
   isStaffGuideButton,
+  STAFF_GUIDE_OPEN_BUTTON_ID,
   STAFF_GUIDE_PAGES,
   staffGuideButtonDirection,
   staffGuideComponents,
   staffGuideEmbed,
+  staffGuideLauncherComponents,
   staffGuidePageIndex,
 } from "./staff-guide";
 import {
@@ -2283,6 +2286,16 @@ export async function startDiscordBot(token: string): Promise<void> {
         interaction.isButton() &&
         isStaffGuideButton(interaction.customId)
       ) {
+        if (interaction.customId === STAFF_GUIDE_OPEN_BUTTON_ID) {
+          await interaction.reply({
+            embeds: [staffGuideEmbed(0)],
+            components: staffGuideComponents(0),
+            allowedMentions: { parse: [] },
+            ephemeral: true,
+          });
+          return;
+        }
+
         const currentPage = staffGuidePageIndex(
           interaction.message.embeds[0]?.footer?.text,
         );
@@ -2319,9 +2332,24 @@ export async function startDiscordBot(token: string): Promise<void> {
           Math.min(nextPage, STAFF_GUIDE_PAGES.length - 1),
         );
         const guidePage = staffGuideEmbed(boundedPage);
-        const guideComponents = staffGuideComponents(boundedPage, true);
+        const guideComponents = staffGuideComponents(boundedPage);
         if (isPrivateStaffGuideButton(interaction.customId)) {
           await interaction.update({
+            embeds: [guidePage],
+            components: guideComponents,
+            allowedMentions: { parse: [] },
+          });
+        } else if (isLegacyStaffGuideButton(interaction.customId)) {
+          await interaction.deferReply({ ephemeral: true });
+          await interaction.message
+            .edit({ components: staffGuideLauncherComponents() })
+            .catch((error: unknown) => {
+              logger.warn(
+                { err: error, messageId: interaction.message.id },
+                "Could not upgrade old staff guide buttons",
+              );
+            });
+          await interaction.editReply({
             embeds: [guidePage],
             components: guideComponents,
             allowedMentions: { parse: [] },
@@ -2644,7 +2672,7 @@ export async function startDiscordBot(token: string): Promise<void> {
         await message.channel.send({
           content: `<@&${RANK_ANNOUNCEMENT_ROLE_ID}>`,
           embeds: [staffGuideEmbed(0)],
-          components: staffGuideComponents(0),
+          components: staffGuideLauncherComponents(),
           allowedMentions: {
             parse: [],
             roles: [RANK_ANNOUNCEMENT_ROLE_ID],
