@@ -38,7 +38,7 @@ Bot Discord configurable pour gérer le recrutement, les conversations de modmai
 ## Product
 
 - `/status` creates or updates one persistent embed in the command channel and hides its temporary command response. It refreshes automatically when maintenance starts, ends, or expires.
-- The `!guidestaff` message command is restricted to user IDs `1140296215469240401` and `1487882100613971979`; its guide text is waiting for the owner to provide it.
+- The `!guidestaff` message command is restricted to user IDs `1140296215469240401` and `1487882100613971979`; its guide text is waiting for the owner to provide it. The bot deletes the invoking message after sending the public embed, so it needs Manage Messages in the channel.
 - Support maintenance publishes or edits an embed in channel `1429467909545005128`; staff-absence maintenance does the same in channel `1559248976694353960`. Active notices show the reason and expected end time or manual duration, are edited when maintenance ends, then deleted one minute after the end time.
 
 - Les administrateurs configurent le recrutement depuis un panneau privé avec aperçu; les candidats voient un embed de recrutement mis en forme avec l’identité du serveur, les étapes, les thèmes du formulaire et son état.

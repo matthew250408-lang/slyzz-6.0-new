@@ -2575,7 +2575,7 @@ export async function startDiscordBot(token: string): Promise<void> {
           return;
         }
 
-        await message.reply({
+        await message.channel.send({
           embeds: [
             successEmbed(
               "Guide staff",
@@ -2584,6 +2584,12 @@ export async function startDiscordBot(token: string): Promise<void> {
             ),
           ],
           allowedMentions: { parse: [], repliedUser: false },
+        });
+        await message.delete().catch((error: unknown) => {
+          logger.warn(
+            { err: error, channelId: message.channelId },
+            "Could not delete staff guide command message",
+          );
         });
         return;
       }
