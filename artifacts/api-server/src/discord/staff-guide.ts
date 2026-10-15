@@ -14,11 +14,10 @@ export const STAFF_GUIDE_LEGACY_NEXT_BUTTON_ID = "staff-guide:next";
 
 export const STAFF_GUIDE_PAGES = [
   {
-    title: "## <:raison:1558391410498084925> Guide Staff",
+    title: "<:raison:1558391410498084925> Guide Staff",
     description: [
       "> Tu **retrouves** ci-dessous toutes les pages à **lire** :",
       "",
-      "- sommaire",
       "- 📋・Règles générales — Page 2",
       "- 🛡️・Rôles et responsabilités — Page 3",
       "- ⚖️・Procédures de modération — Page 4",
