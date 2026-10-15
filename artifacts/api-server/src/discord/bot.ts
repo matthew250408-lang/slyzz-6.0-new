@@ -51,10 +51,12 @@ import {
   isLegacyStaffGuideButton,
   isPrivateStaffGuideButton,
   isStaffGuideButton,
+  STAFF_GUIDE_HOME_BUTTON_ID,
   STAFF_GUIDE_OPEN_BUTTON_ID,
   STAFF_GUIDE_PAGES,
   staffGuideButtonDirection,
   staffGuideComponents,
+  staffGuideCoverEmbed,
   staffGuideEmbed,
   staffGuideLauncherComponents,
   staffGuidePageIndex,
@@ -2296,6 +2298,28 @@ export async function startDiscordBot(token: string): Promise<void> {
           return;
         }
 
+        if (isLegacyStaffGuideButton(interaction.customId)) {
+          await interaction.deferReply({ ephemeral: true });
+          await interaction.message
+            .edit({
+              embeds: [staffGuideCoverEmbed()],
+              components: staffGuideLauncherComponents(),
+              allowedMentions: { parse: [] },
+            })
+            .catch((error: unknown) => {
+              logger.warn(
+                { err: error, messageId: interaction.message.id },
+                "Could not upgrade old staff guide buttons",
+              );
+            });
+          await interaction.editReply({
+            embeds: [staffGuideEmbed(0)],
+            components: staffGuideComponents(0),
+            allowedMentions: { parse: [] },
+          });
+          return;
+        }
+
         const currentPage = staffGuidePageIndex(
           interaction.message.embeds[0]?.footer?.text,
         );
@@ -2308,6 +2332,15 @@ export async function startDiscordBot(token: string): Promise<void> {
               ),
             ],
             ephemeral: true,
+          });
+          return;
+        }
+
+        if (interaction.customId === STAFF_GUIDE_HOME_BUTTON_ID) {
+          await interaction.update({
+            embeds: [staffGuideEmbed(0)],
+            components: staffGuideComponents(0),
+            allowedMentions: { parse: [] },
           });
           return;
         }
@@ -2335,21 +2368,6 @@ export async function startDiscordBot(token: string): Promise<void> {
         const guideComponents = staffGuideComponents(boundedPage);
         if (isPrivateStaffGuideButton(interaction.customId)) {
           await interaction.update({
-            embeds: [guidePage],
-            components: guideComponents,
-            allowedMentions: { parse: [] },
-          });
-        } else if (isLegacyStaffGuideButton(interaction.customId)) {
-          await interaction.deferReply({ ephemeral: true });
-          await interaction.message
-            .edit({ components: staffGuideLauncherComponents() })
-            .catch((error: unknown) => {
-              logger.warn(
-                { err: error, messageId: interaction.message.id },
-                "Could not upgrade old staff guide buttons",
-              );
-            });
-          await interaction.editReply({
             embeds: [guidePage],
             components: guideComponents,
             allowedMentions: { parse: [] },
@@ -2671,7 +2689,7 @@ export async function startDiscordBot(token: string): Promise<void> {
 
         await message.channel.send({
           content: `<@&${RANK_ANNOUNCEMENT_ROLE_ID}>`,
-          embeds: [staffGuideEmbed(0)],
+          embeds: [staffGuideCoverEmbed()],
           components: staffGuideLauncherComponents(),
           allowedMentions: {
             parse: [],

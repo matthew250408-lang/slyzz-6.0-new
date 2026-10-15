@@ -8,18 +8,29 @@ import {
 export const STAFF_GUIDE_OPEN_BUTTON_ID = "staff-guide:open";
 export const STAFF_GUIDE_PREVIOUS_BUTTON_ID = "staff-guide:private:previous";
 export const STAFF_GUIDE_NEXT_BUTTON_ID = "staff-guide:private:next";
+export const STAFF_GUIDE_HOME_BUTTON_ID = "staff-guide:private:home";
 export const STAFF_GUIDE_LEGACY_PREVIOUS_BUTTON_ID = "staff-guide:previous";
 export const STAFF_GUIDE_LEGACY_NEXT_BUTTON_ID = "staff-guide:next";
 
 export const STAFF_GUIDE_PAGES = [
   {
-    title: "📘・Guide Staff Slyzz",
+    title: "📑・Sommaire",
     description: [
-      "Bienvenue dans l'équipe de Slyzz !",
+      "Bienvenue dans le guide du staff Slyzz !",
       "",
-      "Ce guide regroupe les règles et les procédures essentielles pour assurer une bonne modération du serveur.",
+      "Retrouve ici les règles et procédures essentielles pour assurer une bonne modération du serveur :",
       "",
-      "Merci de le lire attentivement et de respecter les consignes présentées.",
+      "📋・Règles générales — Page 2",
+      "🛡️・Rôles et responsabilités — Page 3",
+      "⚖️・Procédures de modération — Page 4",
+      "🔨・Les sanctions — Page 5",
+      "🎫・Gestion des tickets — Page 6",
+      "📊・Activité du staff — Page 7",
+      "🤝・Communication interne — Page 8",
+      "🔒・Discipline interne — Page 9",
+      "✅・Conclusion — Page 10",
+      "",
+      "Utilise les boutons pour parcourir le guide.",
     ].join("\n"),
   },
   {
@@ -138,6 +149,22 @@ export const STAFF_GUIDE_PAGES = [
   },
 ] satisfies Array<{ title: string; description: string }>;
 
+export function staffGuideCoverEmbed(): EmbedBuilder {
+  return new EmbedBuilder()
+    .setColor(0x5865f2)
+    .setTitle("📘・Guide Staff Slyzz")
+    .setDescription(
+      [
+        "Bienvenue dans l'équipe de Slyzz !",
+        "",
+        "Ce guide regroupe les règles et les procédures essentielles pour assurer une bonne modération du serveur.",
+        "",
+        "Merci de le lire attentivement et de respecter les consignes présentées.",
+      ].join("\n"),
+    )
+    .setFooter({ text: "Slyzz・Guide Staff • Page 1/10" });
+}
+
 export function staffGuideEmbed(pageIndex: number): EmbedBuilder {
   const page = STAFF_GUIDE_PAGES[pageIndex];
   if (!page) {
@@ -154,18 +181,26 @@ export function staffGuideEmbed(pageIndex: number): EmbedBuilder {
 }
 
 export function staffGuideComponents(pageIndex: number) {
-  return [
-    new ActionRowBuilder<ButtonBuilder>().addComponents(
-      new ButtonBuilder()
-        .setCustomId(STAFF_GUIDE_PREVIOUS_BUTTON_ID)
-        .setLabel("Précédent")
-        .setStyle(ButtonStyle.Secondary)
-        .setDisabled(pageIndex === 0),
-      new ButtonBuilder()
+  const previousButton = new ButtonBuilder()
+    .setCustomId(STAFF_GUIDE_PREVIOUS_BUTTON_ID)
+    .setLabel("Précédent")
+    .setStyle(ButtonStyle.Secondary)
+    .setDisabled(pageIndex === 0);
+  const finalPage = pageIndex === STAFF_GUIDE_PAGES.length - 1;
+  const nextOrHomeButton = finalPage
+    ? new ButtonBuilder()
+        .setCustomId(STAFF_GUIDE_HOME_BUTTON_ID)
+        .setLabel("Accueil")
+        .setStyle(ButtonStyle.Success)
+    : new ButtonBuilder()
         .setCustomId(STAFF_GUIDE_NEXT_BUTTON_ID)
         .setLabel("Suivant")
-        .setStyle(ButtonStyle.Primary)
-        .setDisabled(pageIndex === STAFF_GUIDE_PAGES.length - 1),
+        .setStyle(ButtonStyle.Primary);
+
+  return [
+    new ActionRowBuilder<ButtonBuilder>().addComponents(
+      previousButton,
+      nextOrHomeButton,
     ),
   ];
 }
@@ -186,6 +221,7 @@ export function isStaffGuideButton(customId: string): boolean {
     customId === STAFF_GUIDE_OPEN_BUTTON_ID ||
     customId === STAFF_GUIDE_PREVIOUS_BUTTON_ID ||
     customId === STAFF_GUIDE_NEXT_BUTTON_ID ||
+    customId === STAFF_GUIDE_HOME_BUTTON_ID ||
     customId === STAFF_GUIDE_LEGACY_PREVIOUS_BUTTON_ID ||
     customId === STAFF_GUIDE_LEGACY_NEXT_BUTTON_ID
   );
@@ -194,7 +230,8 @@ export function isStaffGuideButton(customId: string): boolean {
 export function isPrivateStaffGuideButton(customId: string): boolean {
   return (
     customId === STAFF_GUIDE_PREVIOUS_BUTTON_ID ||
-    customId === STAFF_GUIDE_NEXT_BUTTON_ID
+    customId === STAFF_GUIDE_NEXT_BUTTON_ID ||
+    customId === STAFF_GUIDE_HOME_BUTTON_ID
   );
 }
 
