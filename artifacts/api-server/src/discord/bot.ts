@@ -42,6 +42,7 @@ import {
   STAFF_ABSENCE_ACCESS_ROLE_ID,
   STAFF_ABSENCE_CHANNEL_ID,
   STAFF_ABSENCE_STATUS_PREFIX,
+  STAFF_GUIDE_ALLOWED_USER_IDS,
   customQuestionKey,
   isCustomQuestionKey,
   questionLabel,
@@ -110,6 +111,8 @@ const SERVER_INFO_COMMAND_NAME = "info-serveur";
 const STAFF_ABSENCE_COMMAND_NAME = "absence-staff";
 const MAINTENANCE_COMMAND_NAME = "maintenance";
 const STATUS_COMMAND_NAME = "status";
+const STAFF_GUIDE_COMMAND_NAME = "!guidestaff";
+const STAFF_GUIDE_CONTENT = "";
 const MAINTENANCE_ALLOWED_USER_IDS = new Set([
   "1140296215469240401",
   "1487882100613971979",
@@ -2553,6 +2556,38 @@ export async function startDiscordBot(token: string): Promise<void> {
 
   client.on(Events.MessageCreate, async (message) => {
     try {
+      const commandName = message.content.trim().split(/\s+/, 1)[0]?.toLowerCase();
+      if (
+        !message.author.bot &&
+        message.guild &&
+        commandName === STAFF_GUIDE_COMMAND_NAME
+      ) {
+        if (!STAFF_GUIDE_ALLOWED_USER_IDS.has(message.author.id)) {
+          await message.reply({
+            embeds: [
+              errorEmbed(
+                "Accès refusé",
+                "Cette commande est réservée aux utilisateurs autorisés.",
+              ),
+            ],
+            allowedMentions: { parse: [], repliedUser: false },
+          });
+          return;
+        }
+
+        await message.reply({
+          embeds: [
+            successEmbed(
+              "Guide staff",
+              STAFF_GUIDE_CONTENT ||
+                "Le contenu du guide staff n’a pas encore été configuré.",
+            ),
+          ],
+          allowedMentions: { parse: [], repliedUser: false },
+        });
+        return;
+      }
+
       if (await handleModmailMessage(message, client)) {
         return;
       }
