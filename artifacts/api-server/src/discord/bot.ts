@@ -48,9 +48,10 @@ import {
   questionLabel,
 } from "./constants";
 import {
+  isPrivateStaffGuideButton,
   isStaffGuideButton,
-  STAFF_GUIDE_NEXT_BUTTON_ID,
   STAFF_GUIDE_PAGES,
+  staffGuideButtonDirection,
   staffGuideComponents,
   staffGuideEmbed,
   staffGuidePageIndex,
@@ -2282,19 +2283,6 @@ export async function startDiscordBot(token: string): Promise<void> {
         interaction.isButton() &&
         isStaffGuideButton(interaction.customId)
       ) {
-        if (!STAFF_GUIDE_ALLOWED_USER_IDS.has(interaction.user.id)) {
-          await interaction.reply({
-            embeds: [
-              errorEmbed(
-                "Accès refusé",
-                "Tu n'es pas autorisé à parcourir ce guide.",
-              ),
-            ],
-            ephemeral: true,
-          });
-          return;
-        }
-
         const currentPage = staffGuidePageIndex(
           interaction.message.embeds[0]?.footer?.text,
         );
@@ -2311,19 +2299,41 @@ export async function startDiscordBot(token: string): Promise<void> {
           return;
         }
 
-        const nextPage =
-          interaction.customId === STAFF_GUIDE_NEXT_BUTTON_ID
-            ? currentPage + 1
-            : currentPage - 1;
+        const direction = staffGuideButtonDirection(interaction.customId);
+        if (direction === null) {
+          await interaction.reply({
+            embeds: [
+              errorEmbed(
+                "Guide indisponible",
+                "Cette action de navigation n'est pas reconnue.",
+              ),
+            ],
+            ephemeral: true,
+          });
+          return;
+        }
+
+        const nextPage = currentPage + direction;
         const boundedPage = Math.max(
           0,
           Math.min(nextPage, STAFF_GUIDE_PAGES.length - 1),
         );
-        await interaction.update({
-          embeds: [staffGuideEmbed(boundedPage)],
-          components: staffGuideComponents(boundedPage),
-          allowedMentions: { parse: [] },
-        });
+        const guidePage = staffGuideEmbed(boundedPage);
+        const guideComponents = staffGuideComponents(boundedPage, true);
+        if (isPrivateStaffGuideButton(interaction.customId)) {
+          await interaction.update({
+            embeds: [guidePage],
+            components: guideComponents,
+            allowedMentions: { parse: [] },
+          });
+        } else {
+          await interaction.reply({
+            embeds: [guidePage],
+            components: guideComponents,
+            allowedMentions: { parse: [] },
+            ephemeral: true,
+          });
+        }
         return;
       }
 

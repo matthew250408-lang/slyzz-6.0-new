@@ -7,6 +7,9 @@ import {
 
 export const STAFF_GUIDE_PREVIOUS_BUTTON_ID = "staff-guide:previous";
 export const STAFF_GUIDE_NEXT_BUTTON_ID = "staff-guide:next";
+export const STAFF_GUIDE_PRIVATE_PREVIOUS_BUTTON_ID =
+  "staff-guide:private:previous";
+export const STAFF_GUIDE_PRIVATE_NEXT_BUTTON_ID = "staff-guide:private:next";
 
 export const STAFF_GUIDE_PAGES = [
   {
@@ -150,16 +153,26 @@ export function staffGuideEmbed(pageIndex: number): EmbedBuilder {
     });
 }
 
-export function staffGuideComponents(pageIndex: number) {
+export function staffGuideComponents(
+  pageIndex: number,
+  privateView = false,
+) {
+  const previousButtonId = privateView
+    ? STAFF_GUIDE_PRIVATE_PREVIOUS_BUTTON_ID
+    : STAFF_GUIDE_PREVIOUS_BUTTON_ID;
+  const nextButtonId = privateView
+    ? STAFF_GUIDE_PRIVATE_NEXT_BUTTON_ID
+    : STAFF_GUIDE_NEXT_BUTTON_ID;
+
   return [
     new ActionRowBuilder<ButtonBuilder>().addComponents(
       new ButtonBuilder()
-        .setCustomId(STAFF_GUIDE_PREVIOUS_BUTTON_ID)
+        .setCustomId(previousButtonId)
         .setLabel("Précédent")
         .setStyle(ButtonStyle.Secondary)
         .setDisabled(pageIndex === 0),
       new ButtonBuilder()
-        .setCustomId(STAFF_GUIDE_NEXT_BUTTON_ID)
+        .setCustomId(nextButtonId)
         .setLabel("Suivant")
         .setStyle(ButtonStyle.Primary)
         .setDisabled(pageIndex === STAFF_GUIDE_PAGES.length - 1),
@@ -170,8 +183,35 @@ export function staffGuideComponents(pageIndex: number) {
 export function isStaffGuideButton(customId: string): boolean {
   return (
     customId === STAFF_GUIDE_PREVIOUS_BUTTON_ID ||
-    customId === STAFF_GUIDE_NEXT_BUTTON_ID
+    customId === STAFF_GUIDE_NEXT_BUTTON_ID ||
+    customId === STAFF_GUIDE_PRIVATE_PREVIOUS_BUTTON_ID ||
+    customId === STAFF_GUIDE_PRIVATE_NEXT_BUTTON_ID
   );
+}
+
+export function isPrivateStaffGuideButton(customId: string): boolean {
+  return (
+    customId === STAFF_GUIDE_PRIVATE_PREVIOUS_BUTTON_ID ||
+    customId === STAFF_GUIDE_PRIVATE_NEXT_BUTTON_ID
+  );
+}
+
+export function staffGuideButtonDirection(
+  customId: string,
+): -1 | 1 | null {
+  if (
+    customId === STAFF_GUIDE_PREVIOUS_BUTTON_ID ||
+    customId === STAFF_GUIDE_PRIVATE_PREVIOUS_BUTTON_ID
+  ) {
+    return -1;
+  }
+  if (
+    customId === STAFF_GUIDE_NEXT_BUTTON_ID ||
+    customId === STAFF_GUIDE_PRIVATE_NEXT_BUTTON_ID
+  ) {
+    return 1;
+  }
+  return null;
 }
 
 export function staffGuidePageIndex(footerText: string | null | undefined) {
