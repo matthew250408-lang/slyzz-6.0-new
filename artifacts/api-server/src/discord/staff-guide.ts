@@ -18,129 +18,129 @@ export const STAFF_GUIDE_PAGES = [
     description: [
       "> Tu **retrouves** ci-dessous toutes les pages à **lire** :",
       "",
-      "- 📋・Règles générales — Page 2",
-      "- 🛡️・Rôles et responsabilités — Page 3",
-      "- ⚖️・Procédures de modération — Page 4",
-      "- 🔨・Les sanctions — Page 5",
-      "- 🎫・Gestion des tickets — Page 6",
-      "- 📊・Activité du staff — Page 7",
-      "- 🤝・Communication interne — Page 8",
-      "- 🔒・Discipline interne — Page 9",
-      "- ✅・Conclusion — Page 10",
+      "- **Règles générales** — Page 2",
+      "- **Rôles et responsabilités** — Page 3",
+      "- **Procédures de modération** — Page 4",
+      "- **Les sanctions** — Page 5",
+      "- **Gestion des tickets** — Page 6",
+      "- **Activité du staff** — Page 7",
+      "- **Communication interne** — Page 8",
+      "- **Discipline interne** — Page 9",
+      "- **Conclusion** — Page 10",
     ].join("\n"),
   },
   {
-    title: "📋・Règles générales",
+    title: "Règles générales",
     description: [
-      "Tous les membres du staff doivent :",
+      "**Tous les membres du staff** doivent :",
       "",
-      "- Respecter les membres et l'équipe.",
-      "- Rester calmes et professionnels.",
-      "- Être impartiaux dans leurs décisions.",
-      "- Garder les informations internes confidentielles.",
-      "- Utiliser leurs permissions correctement.",
+      "- **Respecter** les membres et l'équipe.",
+      "- Rester **calmes et professionnels**.",
+      "- Être **impartiaux** dans leurs décisions.",
+      "- Garder les **informations internes confidentielles**.",
+      "- Utiliser leurs **permissions correctement**.",
     ].join("\n"),
   },
   {
-    title: "🛡️・Rôles et responsabilités",
+    title: "Rôles et responsabilités",
     description: [
       "**Modérateurs :**",
-      "- Faire respecter le règlement.",
-      "- Traiter les signalements.",
-      "- Intervenir en cas d'infraction.",
-      "- Transmettre les problèmes importants.",
+      "- Faire respecter le **règlement**.",
+      "- Traiter les **signalements**.",
+      "- Intervenir en cas d'**infraction**.",
+      "- Transmettre les **problèmes importants**.",
       "",
       "**Administrateurs :**",
-      "- Superviser la modération.",
-      "- Gérer les situations complexes.",
+      "- Superviser la **modération**.",
+      "- Gérer les **situations complexes**.",
       "- Accompagner les modérateurs.",
-      "- Veiller au bon fonctionnement du serveur.",
+      "- Veiller au **bon fonctionnement du serveur**.",
     ].join("\n"),
   },
   {
-    title: "⚖️・Procédures de modération",
+    title: "Procédures de modération",
     description: [
-      "Avant toute sanction :",
+      "**Avant toute sanction :**",
       "",
-      "1. Vérifiez les faits.",
-      "2. Identifiez la règle enfreinte.",
-      "3. Évaluez la gravité de la situation.",
-      "4. Appliquez une sanction adaptée.",
-      "5. Conservez une preuve si nécessaire.",
+      "1. **Vérifiez les faits.**",
+      "2. **Identifiez la règle enfreinte.**",
+      "3. **Évaluez la gravité** de la situation.",
+      "4. Appliquez une **sanction adaptée**.",
+      "5. **Conservez une preuve** si nécessaire.",
       "",
-      "En cas de doute, demandez conseil à un administrateur.",
+      "**En cas de doute**, demandez conseil à un administrateur.",
     ].join("\n"),
   },
   {
-    title: "🔨・Les sanctions",
+    title: "Les sanctions",
     description: [
       "- **Avertissement :** rappeler une règle.",
       "- **Timeout :** suspendre temporairement la participation d'un membre.",
       "- **Expulsion :** retirer un membre du serveur sans bannissement.",
       "- **Bannissement :** interdire l'accès au serveur.",
       "",
-      "Toute sanction doit être justifiée et proportionnée. Les infractions graves peuvent nécessiter une sanction immédiate plus ferme.",
+      "Toute sanction doit être **justifiée et proportionnée**. Les **infractions graves** peuvent nécessiter une **sanction immédiate plus ferme**.",
     ].join("\n"),
   },
   {
-    title: "🎫・Gestion des tickets",
+    title: "Gestion des tickets",
     description: [
       "Lorsqu'un ticket est ouvert :",
       "",
-      "- Accueillez le membre poliment.",
-      "- Prenez connaissance de sa demande.",
-      "- Posez des questions si nécessaire.",
-      "- Apportez une réponse claire.",
-      "- Demandez de l'aide si besoin.",
-      "- Fermez le ticket lorsque la demande est résolue.",
+      "- **Accueillez** le membre poliment.",
+      "- **Prenez connaissance** de sa demande.",
+      "- **Posez des questions** si nécessaire.",
+      "- Apportez une **réponse claire**.",
+      "- **Demandez de l'aide** si besoin.",
+      "- **Fermez le ticket** lorsque la demande est résolue.",
     ].join("\n"),
   },
   {
-    title: "📊・Activité du staff",
+    title: "Activité du staff",
     description: [
-      "Chaque membre doit participer au bon fonctionnement du serveur selon les attentes définies par le haut staff.",
+      "**Chaque membre** doit participer au bon fonctionnement du serveur selon les attentes définies par le haut staff.",
       "",
-      "- Restez actif dans la mesure de vos disponibilités.",
-      "- Répondez aux sollicitations importantes.",
-      "- Prévenez en cas d'absence.",
-      "- Participez aux tâches de modération.",
-      "- Acceptez les remarques constructives.",
+      "- **Restez actif** dans la mesure de vos disponibilités.",
+      "- Répondez aux **sollicitations importantes**.",
+      "- **Prévenez en cas d'absence**.",
+      "- Participez aux tâches de **modération**.",
+      "- Acceptez les **remarques constructives**.",
       "",
-      "La qualité du travail compte autant que la quantité.",
+      "La **qualité du travail** compte autant que la quantité.",
     ].join("\n"),
   },
   {
-    title: "🤝・Communication interne",
+    title: "Communication interne",
     description: [
-      "Une bonne communication est essentielle au fonctionnement de l'équipe.",
+      "Une **bonne communication** est essentielle au fonctionnement de l'équipe.",
       "",
-      "- Utilisez les salons prévus pour le staff.",
-      "- Transmettez les informations importantes.",
-      "- Restez respectueux lors des désaccords.",
-      "- Évitez les conflits publics.",
-      "- Signalez les problèmes aux responsables concernés.",
+      "- Utilisez les **salons prévus pour le staff**.",
+      "- Transmettez les **informations importantes**.",
+      "- Restez **respectueux** lors des désaccords.",
+      "- Évitez les **conflits publics**.",
+      "- Signalez les problèmes aux **responsables concernés**.",
       "",
-      "L'entraide permet d'assurer une modération plus efficace.",
+      "L'**entraide** permet d'assurer une modération plus efficace.",
     ].join("\n"),
   },
   {
-    title: "🔒・Discipline interne",
+    title: "Discipline interne",
     description: [
-      "Tout membre du staff est responsable de son comportement et de l'utilisation de ses permissions.",
+      "Tout membre du staff est **responsable** de son comportement et de l'utilisation de ses permissions.",
       "",
-      "Les abus de pouvoir, les sanctions personnelles et les fuites d'informations confidentielles peuvent entraîner un derank instantanée.",
+      "Les **abus de pouvoir**, les **sanctions personnelles** et les **fuites d'informations confidentielles** peuvent entraîner un **derank instantané**.",
     ].join("\n"),
   },
   {
-    title: "✅・Conclusion",
+    title: "Conclusion",
     description: [
-      "Chaque membre du staff contribue à la qualité et à la réputation de Slyzz.",
+      "Chaque membre du staff contribue à la **qualité** et à la **réputation de Slyzz**.",
       "",
-      "Restez respectueux, impartiaux et responsables dans chacune de vos interventions.",
+      "Restez **respectueux, impartiaux et responsables** dans chacune de vos interventions.",
       "",
-      "En cas de doute, privilégiez la communication et demandez de l'aide.",
+      "En cas de doute, privilégiez la **communication** et demandez de l'aide.",
       "",
-      "Merci pour votre investissement et votre engagement au sein du staff Slyzz !",
+      "Merci pour votre **investissement** et votre **engagement** au sein du staff Slyzz !",
     ].join("\n"),
   },
 ] satisfies Array<{ title?: string; description: string }>;
@@ -151,11 +151,11 @@ export function staffGuideCoverEmbed(): EmbedBuilder {
     .setTitle("<:raison:1558391410498084925> Guide Staff")
     .setDescription(
       [
-        "Bienvenue dans l'équipe de Slyzz !",
+        "**Bienvenue dans l'équipe de Slyzz !**",
         "",
-        "Ce guide regroupe les règles et les procédures essentielles pour assurer une bonne modération du serveur.",
+        "Ce guide regroupe les **règles** et les **procédures essentielles** pour assurer une **bonne modération** du serveur.",
         "",
-        "Merci de le lire attentivement et de respecter les consignes présentées.",
+        "Merci de le **lire attentivement** et de **respecter les consignes** présentées.",
       ].join("\n"),
     )
     .setFooter({ text: "Slyzz・Guide Staff • Page 1/10" });
@@ -190,11 +190,11 @@ export function staffGuideComponents(pageIndex: number) {
     ? new ButtonBuilder()
         .setCustomId(STAFF_GUIDE_HOME_BUTTON_ID)
         .setLabel("Accueil")
-        .setStyle(ButtonStyle.Success)
+        .setStyle(ButtonStyle.Secondary)
     : new ButtonBuilder()
         .setCustomId(STAFF_GUIDE_NEXT_BUTTON_ID)
         .setLabel("Suivant")
-        .setStyle(ButtonStyle.Primary);
+        .setStyle(ButtonStyle.Secondary);
 
   return [
     new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -210,7 +210,7 @@ export function staffGuideLauncherComponents() {
       new ButtonBuilder()
         .setCustomId(STAFF_GUIDE_OPEN_BUTTON_ID)
         .setLabel("Consulter le guide")
-        .setStyle(ButtonStyle.Primary),
+        .setStyle(ButtonStyle.Secondary),
     ),
   ];
 }
