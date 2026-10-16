@@ -34,16 +34,20 @@ async function runInChannelOrder<T>(
 }
 
 function countingEmbed(message: Message, count: string): EmbedBuilder {
+  const displayName =
+    message.member?.displayName ??
+    message.author.globalName ??
+    message.author.username;
+  const nextCount = (BigInt(count) + 1n).toString();
+
   return new EmbedBuilder()
     .setColor(COUNTING_EMBED_COLOR)
-    .setAuthor({
-      name:
-        message.member?.displayName ??
-        message.author.globalName ??
-        message.author.username,
-      iconURL: message.author.displayAvatarURL(),
-    })
-    .setDescription(`**${count}**`);
+    .setTitle("Comptage infini")
+    .setDescription(
+      [`## ${count}`, "", `Compté par **${displayName}**.`].join("\n"),
+    )
+    .setThumbnail(message.author.displayAvatarURL())
+    .setFooter({ text: `Prochain nombre attendu : ${nextCount}` });
 }
 
 export async function handleCountingGameResetCommand(
