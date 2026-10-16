@@ -100,6 +100,7 @@ import {
   isModmailButton,
   isModmailModal,
 } from "./modmail";
+import { handleCountingGameMessage } from "./counting-game";
 import { createCustomEmbed } from "./custom-embed";
 
 const SETUP_PREFIX = "setup:inscription:";
@@ -2668,6 +2669,10 @@ export async function startDiscordBot(token: string): Promise<void> {
 
   client.on(Events.MessageCreate, async (message) => {
     try {
+      if (await handleCountingGameMessage(message)) {
+        return;
+      }
+
       const commandName = message.content.trim().split(/\s+/, 1)[0]?.toLowerCase();
       if (
         !message.author.bot &&
@@ -2746,7 +2751,7 @@ export async function startDiscordBot(token: string): Promise<void> {
         allowedMentions: { repliedUser: false },
       });
     } catch (error) {
-      logger.warn({ err: error }, "Could not reply to bot mention");
+      logger.warn({ err: error }, "Could not process Discord message");
     }
   });
 
