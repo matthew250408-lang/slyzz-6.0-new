@@ -100,7 +100,10 @@ import {
   isModmailButton,
   isModmailModal,
 } from "./modmail";
-import { handleCountingGameMessage } from "./counting-game";
+import {
+  handleCountingGameMessage,
+  handleCountingGameResetCommand,
+} from "./counting-game";
 import { createCustomEmbed } from "./custom-embed";
 
 const SETUP_PREFIX = "setup:inscription:";
@@ -2669,6 +2672,10 @@ export async function startDiscordBot(token: string): Promise<void> {
 
   client.on(Events.MessageCreate, async (message) => {
     try {
+      if (await handleCountingGameResetCommand(message)) {
+        return;
+      }
+
       if (await handleCountingGameMessage(message)) {
         return;
       }

@@ -87,3 +87,21 @@ export async function rollbackCountingAttempt(
 
   return rolledBack.length > 0;
 }
+
+export async function resetCountingGame(channelId: string): Promise<void> {
+  await db.transaction(async (transaction) => {
+    await transaction
+      .insert(countingGameTable)
+      .values({ channelId })
+      .onConflictDoNothing();
+
+    await transaction
+      .update(countingGameTable)
+      .set({
+        currentCount: "0",
+        lastUserId: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(countingGameTable.channelId, channelId));
+  });
+}
